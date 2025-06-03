@@ -1,35 +1,60 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+import React, { useSyncExternalStore } from 'react';
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+// External store to manage theme
+let currentTheme = 'light';
+const listeners = new Set();
+
+const themeStore = {
+  getSnapshot: () => currentTheme,
+  subscribe: (callback) => {
+    listeners.add(callback);
+    return () => listeners.delete(callback);
+  },
+  toggleTheme: () => {
+    currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+    listeners.forEach((cb) => cb());
+  },
+};
+
+// Custom Hook
+function useTheme() {
+  return useSyncExternalStore(themeStore.subscribe, themeStore.getSnapshot);
 }
 
-export default App
+// Main App Component
+export default function App() {
+  const theme = useTheme();
+
+  return (
+    <div
+      style={{
+        padding: '2rem',
+        backgroundColor: theme === 'dark' ? '#111' : '#f9f9f9',
+        color: theme === 'dark' ? '#f9f9f9' : '#111',
+        minHeight: '100vh',
+        transition: 'all 0.3s ease',
+      }}
+    >
+      <h1>useSyncExternalStore Theme Demo</h1>
+      <p>
+        Current Theme: <strong>{theme}</strong>
+      </p>
+      <button
+        onClick={themeStore.toggleTheme}
+        style={{
+          padding: '0.5rem 1rem',
+          fontSize: '1rem',
+          cursor: 'pointer',
+          backgroundColor: theme === 'dark' ? '#333' : '#ddd',
+          color: theme === 'dark' ? '#fff' : '#000',
+          border: 'none',
+          borderRadius: '5px',
+        }}
+      >
+        Toggle Theme
+      </button>
+    </div>
+  );
+}
+
